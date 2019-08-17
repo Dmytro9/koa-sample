@@ -35,6 +35,24 @@ app.context.something = 'something';
 // next()
 // });
 
+app.use(async function (ctx, next) {
+  console.log('>> one');
+  await next();
+  console.log('<< one');
+});
+
+app.use(async function (ctx, next) {
+  console.log('>> two');
+  ctx.body = 'two';
+  console.log('<< two');
+});
+
+app.use(async function (ctx, next) {
+  console.log('>> three');
+  await next();
+  console.log('<< three');
+});
+
 
 function auth1(ctx, next) {
   // console.log(ctx)
@@ -51,9 +69,9 @@ function auth2(ctx, next) {
 // Router middleware
 app.use(router.routes()).use(router.allowedMethods());
 
-// app.use(async ctx => {
-//   ctx.body = 'Hello World';
-// });
+app.use(async ctx => {
+  ctx.body = 'Hello World';
+});
 
 router.get('/test1', auth1, auth2, ctx => {
   console.log('fresh ', ctx.stale)
@@ -61,11 +79,19 @@ router.get('/test1', auth1, auth2, ctx => {
     ctx.status = 304;
     return;
   }
-  console.log(Date.now())
+  
   ctx.set('Last-Modified', Date.now());
   ctx.body = 'Hello Test'
 })
 
+async function responseTime(ctx, next) {
+  const start = Date.now();
+  await next();
+  const ms = Date.now() - start;
+  ctx.set('X-Response-Time', `${ms}ms`);
+}
+
+app.use(responseTime);
 
 router.get('/test2', auth2, test2);
 
@@ -113,6 +139,8 @@ async function test3(ctx) {
 }
 
 
-router.get('/test3/:id', auth1, test3);
+
+
+router.get('/test3/:id', responseTime, auth1, test3);
 
 app.listen(4000, () => console.log('Listening on 4000'));

@@ -34,3 +34,22 @@ ctx.cookies.set(name, value, [options])
 
 // Throw error - works with app.use(async ctx => ...)
 ctx.throw(401, 'access_denied', { user: user });
+
+
+// Creating middleware - naming middleware with wraping function (even without params) for customization
+function logger(format) {
+    format = format || ':method ":url"';
+  
+    return async function (ctx, next) {
+      const str = format
+        .replace(':method', ctx.method)
+        .replace(':url', ctx.url);
+  
+      console.log(str);
+  
+      await next();
+    };
+  }
+  
+  app.use(logger());
+  app.use(logger(':method :url'));
